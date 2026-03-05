@@ -1,0 +1,39 @@
+{
+  "name": "rag-server",
+  "version": "1.0.0",
+  "description": "Backend for MERN RAG App",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "@langchain/community": "^1.1.22",
+    "@langchain/core": "^1.1.30",
+    "@langchain/openai": "^1.2.12",
+    "@langchain/qdrant": "^1.0.1",
+    "@langchain/textsplitters": "^1.0.1",
+    "@qdrant/js-client-rest": "^1.8.1",
+    "axios": "^1.6.8",
+    "bcryptjs": "^2.4.3",
+    "cheerio": "^1.0.0-rc.12",
+    "cloudinary": "^2.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.2.3",
+    "multer": "^1.4.5-lts.1",
+    "openai": "^4.29.2",
+    "pdf-parse": "^1.1.4",
+    "youtube-captions-scraper": "^2.0.3",
+    "youtube-transcript": "^1.2.1",
+    "youtube-transcript-api": "^3.0.6",
+    "youtubei.js": "^16.0.1",
+    "ytdl-core": "^4.11.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
