@@ -287,7 +287,7 @@ const NotebookDetail = () => {
                                             : 'bg-white border border-slate-200 text-slate-800 rounded-tl-sm leading-relaxed shadow-lg shadow-slate-200/40'
                                         }
                   `}>
-                                        <div className="prose prose-sm md:prose-base max-w-none">
+                                        <div className={`prose prose-sm md:prose-base max-w-none ${msg.role === 'user' ? 'text-white' : ''}`}>
                                             {msg.role === 'user' ? (
                                                 <div className="whitespace-pre-wrap">{msg.content}</div>
                                             ) : (
