@@ -14,7 +14,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-    origin: ['https://think-note-ai-frontend.vercel.app', 'http://localhost:5173', 'http://localhost:3000'],
+    origin: ['https://thinknote-ai.vercel.app', 'http://localhost:5173', 'http://localhost:3000'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true
 }));
