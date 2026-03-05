@@ -18,8 +18,7 @@ import {
 const router = express.Router();
 
 // Setup Multer to save files temporarily
-const upload = multer({ dest: 'uploads/' });
-
+const upload = multer({ dest: '/tmp' });
 // Add a new source to a notebook
 router.post('/:notebookId', auth, upload.single('file'), async (req, res) => {
     try {
