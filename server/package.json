@@ -26,12 +26,8 @@
     "mongoose": "^8.2.3",
     "multer": "^1.4.5-lts.1",
     "openai": "^4.29.2",
-    "pdf-parse": "^1.1.4",
-    "youtube-captions-scraper": "^2.0.3",
-    "youtube-transcript": "^1.2.1",
-    "youtube-transcript-api": "^3.0.6",
-    "youtubei.js": "^16.0.1",
-    "ytdl-core": "^4.11.5"
+    "pdf-parse": "^2.4.5",
+    "youtube-transcript": "^1.2.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"
