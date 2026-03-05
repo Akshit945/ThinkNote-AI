@@ -14,6 +14,7 @@ import {
     extractTextFromUrl,
     extractTextFromYoutube
 } from '../utils/extractors.js';
+import { extractTextFromWebSearch } from '../utils/webSearch.js';
 
 const router = express.Router();
 
@@ -53,6 +54,8 @@ router.post('/:notebookId', auth, upload.single('file'), async (req, res) => {
             extractedText = await extractTextFromYoutube(content);
         } else if (type === 'text') {
             extractedText = content;
+        } else if (type === 'web_search') {
+            extractedText = await extractTextFromWebSearch(content);
         } else {
             if (req.file) fs.unlinkSync(req.file.path);
             return res.status(400).json({ message: 'Invalid source type' });

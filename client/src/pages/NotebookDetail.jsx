@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ChevronLeft, Plus, FileText, Globe, Youtube, AlignLeft, Send, Loader2, Bot, User, Trash2 } from 'lucide-react';
+import { ChevronLeft, Plus, FileText, Globe, Youtube, AlignLeft, Send, Loader2, Bot, User, Trash2, Search } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -14,7 +14,7 @@ const NotebookDetail = () => {
     const [sourceToDelete, setSourceToDelete] = useState(null);
 
     // Source states
-    const [sourceType, setSourceType] = useState('pdf'); // pdf, url, youtube, text
+    const [sourceType, setSourceType] = useState('pdf'); // pdf, url, youtube, text, web_search
     const [sourceTitle, setSourceTitle] = useState('');
     const [sourceContent, setSourceContent] = useState('');
     const [sourceFile, setSourceFile] = useState(null);
@@ -242,12 +242,14 @@ const NotebookDetail = () => {
                                     <div className={`p-2 rounded-lg flex-shrink-0 transition-colors ${source.type === 'pdf' ? 'bg-rose-50 text-rose-600 group-hover:bg-rose-100' :
                                         source.type === 'url' ? 'bg-sky-50 text-sky-600 group-hover:bg-sky-100' :
                                             source.type === 'youtube' ? 'bg-red-50 text-red-600 group-hover:bg-red-100' :
-                                                'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100'
+                                                source.type === 'web_search' ? 'bg-purple-50 text-purple-600 group-hover:bg-purple-100' :
+                                                    'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100'
                                         }`}>
                                         {source.type === 'pdf' && <FileText className="h-4 w-4" />}
                                         {source.type === 'url' && <Globe className="h-4 w-4" />}
                                         {source.type === 'youtube' && <Youtube className="h-4 w-4" />}
                                         {source.type === 'text' && <AlignLeft className="h-4 w-4" />}
+                                        {source.type === 'web_search' && <Search className="h-4 w-4" />}
                                     </div>
                                     <div className="flex-1 min-w-0 pr-2">
                                         <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-brand-700 transition-colors">{source.title}</p>
@@ -393,8 +395,8 @@ const NotebookDetail = () => {
 
                             <div className="mb-6">
                                 <label className="block text-sm font-semibold text-slate-900 mb-3">Source Type</label>
-                                <div className="grid grid-cols-4 gap-3">
-                                    {['pdf', 'url', 'youtube', 'text'].map(type => (
+                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                    {['pdf', 'url', 'web_search', 'youtube', 'text'].map(type => (
                                         <button
                                             key={type}
                                             type="button"
@@ -482,6 +484,28 @@ const NotebookDetail = () => {
                                             placeholder="Paste your text documents, code snippets, or raw notes here..."
                                             required
                                         />
+                                    </div>
+                                )}
+
+                                {sourceType === 'web_search' && (
+                                    <div className="animate-fade-in">
+                                        <label className="block text-sm font-semibold text-slate-900 mb-2">
+                                            Search Query
+                                        </label>
+                                        <div className="relative flex items-center">
+                                            <Search className="absolute left-3 h-5 w-5 text-slate-400 pointer-events-none" />
+                                            <input
+                                                type="text"
+                                                value={sourceContent}
+                                                onChange={(e) => setSourceContent(e.target.value)}
+                                                className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none transition-all shadow-sm"
+                                                placeholder="e.g. Latest news on Artificial Intelligence 2026..."
+                                                required
+                                            />
+                                        </div>
+                                        <p className="mt-2 text-[11px] text-slate-500 font-medium">
+                                            Provide a detailed query. The top results will be automatically scraped and summarized into your notebook index.
+                                        </p>
                                     </div>
                                 )}
                             </div>
