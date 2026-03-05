@@ -83,10 +83,10 @@ export const searchSimilarChunks = async (query, notebookId, limit = 4, selected
 
         // Filter out low relevance results (Cosine similarity score)
         // Adjust this threshold between 0.0 and 1.0 depending on your needs
-        const minRelevanceScore = 0.0;
+        const minRelevanceScore = 0.15;
         const filteredResults = results
             .filter(([doc, score]) => {
-                console.log('QDRANT SCORE:', doc, score);
+                // console.log('QDRANT SCORE:', doc, score);
                 return score >= minRelevanceScore
             })
             .map(([doc, score]) => doc);

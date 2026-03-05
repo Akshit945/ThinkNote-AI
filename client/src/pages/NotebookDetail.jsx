@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ChevronLeft, Plus, FileText, Globe, Youtube, AlignLeft, Send, Loader2, Bot, User, Trash2, Search } from 'lucide-react';
+import { ChevronLeft, Plus, FileText, Globe, Youtube, AlignLeft, Send, Loader2, Bot, User, Trash2, Search, Sparkles, ChevronDown, ArrowRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -17,6 +17,7 @@ const NotebookDetail = () => {
     const [sourceType, setSourceType] = useState('pdf'); // pdf, url, youtube, text, web_search
     const [sourceTitle, setSourceTitle] = useState('');
     const [sourceContent, setSourceContent] = useState('');
+    const [inlineSearchQuery, setInlineSearchQuery] = useState('');
     const [sourceFile, setSourceFile] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -118,7 +119,7 @@ const NotebookDetail = () => {
     };
 
     const handleAddSource = async (e) => {
-        e.preventDefault();
+        if (e && e.preventDefault) e.preventDefault();
         setIsUploading(true);
         try {
             const token = localStorage.getItem('token');
@@ -147,6 +148,34 @@ const NotebookDetail = () => {
         } catch (err) {
             console.error(err);
             alert(err.response?.data?.message || 'Failed to add source');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleInlineWebSearch = async () => {
+        if (!inlineSearchQuery.trim()) return;
+        setIsUploading(true);
+
+        try {
+            const token = localStorage.getItem('token');
+            const formData = new FormData();
+            formData.append('type', 'web_search');
+            formData.append('title', inlineSearchQuery);
+            formData.append('content', inlineSearchQuery);
+
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/sources/${id}`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            setInlineSearchQuery('');
+            fetchNotebookDetails();
+        } catch (err) {
+            console.error('Add source error:', err);
+            alert(err.response?.data?.error || 'Failed to add source');
         } finally {
             setIsUploading(false);
         }
@@ -215,15 +244,45 @@ const NotebookDetail = () => {
 
                 {/* Left Sidebar - Sources */}
                 <aside className="w-80 border-r border-slate-200 bg-white flex flex-col hidden md:flex z-10 shadow-sm relative">
-                    <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                        <h2 className="font-bold font-display text-slate-900">Knowledge Base</h2>
+                    <div className="p-4 flex flex-col gap-4 border-b border-slate-200">
                         <button
                             onClick={() => setIsSourceModalOpen(true)}
-                            className="p-1.5 bg-brand-100 text-brand-700 rounded-lg hover:bg-brand-200 transition-colors shadow-sm"
+                            className="w-full py-2.5 px-4 rounded-3xl border-2 border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
                             title="Add Source"
                         >
                             <Plus className="h-4 w-4" />
+                            Add sources
                         </button>
+
+                        <div className="bg-slate-50 rounded-[1.25rem] p-3 border border-slate-200">
+                            <div className="flex items-center gap-3 px-1 mt-1">
+                                <Search className="h-4 w-4 text-slate-400 shrink-0" />
+                                <input
+                                    type="text"
+                                    placeholder="Search the web for new sources"
+                                    className="bg-transparent border-none text-slate-700 text-[13px] font-medium focus:outline-none focus:ring-0 w-full placeholder:text-slate-400 p-0"
+                                    value={inlineSearchQuery}
+                                    onChange={(e) => setInlineSearchQuery(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleInlineWebSearch();
+                                    }}
+                                />
+                            </div>
+                            <div className="flex items-center gap-2 mt-4 ml-1">
+
+                                <button className="flex items-center gap-1.5 bg-white hover:bg-slate-50 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-600 border border-slate-200 transition-colors shadow-sm"
+                                    onClick={handleInlineWebSearch}
+                                    disabled={isUploading || !inlineSearchQuery.trim()}>
+                                    {isUploading ? <Loader2 className="h-3.5 w-3.5 text-brand-500 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-brand-500" />}
+                                    Fast research
+                                </button>
+                                <button className="ml-auto h-8 w-8 rounded-full bg-slate-900 hover:bg-slate-800 flex items-center justify-center text-white transition-colors disabled:opacity-50"
+                                    onClick={handleInlineWebSearch}
+                                    disabled={isUploading || !inlineSearchQuery.trim()}>
+                                    <ArrowRight className="h-4 w-4" />
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -396,7 +455,7 @@ const NotebookDetail = () => {
                             <div className="mb-6">
                                 <label className="block text-sm font-semibold text-slate-900 mb-3">Source Type</label>
                                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                                    {['pdf', 'url', 'web_search', 'youtube', 'text'].map(type => (
+                                    {['pdf', 'url', 'youtube', 'text'].map(type => (
                                         <button
                                             key={type}
                                             type="button"
