@@ -95,4 +95,34 @@ router.post('/:notebookId', auth, upload.single('file'), async (req, res) => {
     }
 });
 
+// Delete a source
+router.delete('/:notebookId/:sourceId', auth, async (req, res) => {
+    try {
+        const { notebookId, sourceId } = req.params;
+
+        // Verify notebook ownership
+        const notebook = await Notebook.findOne({ _id: notebookId, owner: req.user });
+        if (!notebook) {
+            return res.status(404).json({ message: 'Notebook not found' });
+        }
+
+        // Check if source exists and is linked to the notebook
+        const sourceIndex = notebook.sources.indexOf(sourceId);
+        if (sourceIndex === -1) {
+            return res.status(404).json({ message: 'Source not found in this notebook' });
+        }
+
+        // Delete from DB
+        await Source.findByIdAndDelete(sourceId);
+
+        // Remove from notebook's sources array
+        notebook.sources.splice(sourceIndex, 1);
+        await notebook.save();
+
+        res.json({ message: 'Source deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 export default router;

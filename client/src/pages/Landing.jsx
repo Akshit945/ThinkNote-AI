@@ -171,7 +171,7 @@ const Landing = () => {
                                         Multi-modal Input
                                     </dt>
                                     <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-slate-600">
-                                        <p className="flex-auto">Upload PDFs, raw text, or paste URLs to scrape directly into your knowledge base.</p>
+                                        <p className="flex-auto">Upload PDFs, raw text,youtube or paste URLs to scrape directly into your knowledge base.</p>
                                     </dd>
                                 </div>
 
@@ -199,7 +199,7 @@ const Landing = () => {
             <footer className="bg-white border-t border-gray-100">
                 <div className="mx-auto max-w-7xl px-6 py-12 md:flex md:items-center md:justify-between lg:px-8">
                     <div className="flex justify-center space-x-6 md:order-2">
-                        <a href="#" className="text-gray-400 hover:text-gray-500 transition-colors">
+                        <a href="https://github.com/Akshit945/ThinkNote-AI" className="text-gray-400 hover:text-gray-500 transition-colors">
                             <span className="sr-only">GitHub</span>
                             <Github className="h-5 w-5" aria-hidden="true" />
                         </a>

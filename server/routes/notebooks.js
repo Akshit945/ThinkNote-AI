@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Notebook from '../models/Notebook.js';
 import { auth } from '../middleware/auth.js';
 
@@ -43,6 +44,27 @@ router.get('/:id', auth, async (req, res) => {
             return res.status(404).json({ message: 'Notebook not found' });
         }
         res.json(notebook);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete a notebook and its sources
+router.delete('/:id', auth, async (req, res) => {
+    try {
+        const notebook = await Notebook.findOne({ _id: req.params.id, owner: req.user });
+        if (!notebook) {
+            return res.status(404).json({ message: 'Notebook not found' });
+        }
+
+        // Also delete related sources from DB
+        if (notebook.sources && notebook.sources.length > 0) {
+            await mongoose.model('Source').deleteMany({ _id: { $in: notebook.sources } });
+        }
+
+        await Notebook.findByIdAndDelete(notebook._id);
+
+        res.json({ message: 'Notebook deleted successfully' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

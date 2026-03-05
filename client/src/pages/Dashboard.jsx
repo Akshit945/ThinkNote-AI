@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { PlusCircle, Search, LogOut, BookOpen, Clock, Settings, Bell, LayoutDashboard } from 'lucide-react';
+import { PlusCircle, Search, LogOut, BookOpen, Clock, Settings, Bell, LayoutDashboard, Trash2 } from 'lucide-react';
 
 const Dashboard = () => {
     const [notebooks, setNotebooks] = useState([]);
+    const [user, setUser] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [notebookToDelete, setNotebookToDelete] = useState(null);
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
@@ -14,8 +16,21 @@ const Dashboard = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
+        fetchUser();
         fetchNotebooks();
     }, []);
+
+    const fetchUser = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setUser(data);
+        } catch (err) {
+            console.error('Fetch user error:', err);
+        }
+    };
 
     const fetchNotebooks = async () => {
         try {
@@ -45,6 +60,22 @@ const Dashboard = () => {
             fetchNotebooks();
         } catch (err) {
             console.error(err);
+        }
+    };
+
+    const handleDeleteNotebook = async () => {
+        if (!notebookToDelete) return;
+
+        try {
+            const token = localStorage.getItem('token');
+            await axios.delete(`${import.meta.env.VITE_API_URL}/api/notebooks/${notebookToDelete}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            fetchNotebooks();
+            setNotebookToDelete(null);
+        } catch (err) {
+            console.error('Failed to delete notebook:', err);
+            alert('Failed to delete notebook');
         }
     };
 
@@ -95,12 +126,12 @@ const Dashboard = () => {
 
                 <div className="p-4 border-t border-slate-100 mt-auto">
                     <div className="flex items-center gap-3 px-3 py-2 mb-2 rounded-lg bg-slate-50">
-                        <div className="h-8 w-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-sm">
-                            ME
+                        <div className="h-8 w-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-sm uppercase">
+                            {user?.username ? user.username.substring(0, 2) : 'ME'}
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-900 truncate">My Account</p>
-                            <p className="text-xs text-slate-500 truncate">Free Plan</p>
+                            <p className="text-sm font-medium text-slate-900 truncate">{user?.username || 'My Account'}</p>
+                            <p className="text-xs text-slate-500 truncate">{user?.email || 'Free Plan'}</p>
                         </div>
                     </div>
                     <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors font-medium">
@@ -201,6 +232,17 @@ const Dashboard = () => {
                                                     <div className="p-2 bg-brand-50 rounded-lg text-brand-600 group-hover:bg-brand-100 transition-colors">
                                                         <BookOpen className="h-5 w-5" />
                                                     </div>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            setNotebookToDelete(nb._id);
+                                                        }}
+                                                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                                                        title="Delete Notebook"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
                                                 </div>
                                                 <h3 className="text-lg font-bold text-slate-900 mb-1 leading-tight group-hover:text-brand-600 transition-colors line-clamp-2">{nb.title}</h3>
                                                 <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed flex-1">{nb.description || "No description provided."}</p>
@@ -290,6 +332,33 @@ const Dashboard = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {notebookToDelete && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all scale-100 border border-slate-100 animate-slide-up p-6">
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-4 mx-auto">
+                            <Trash2 className="h-6 w-6 text-red-600" />
+                        </div>
+                        <h3 className="text-xl font-bold text-center text-slate-900 mb-2">Delete Notebook</h3>
+                        <p className="text-slate-500 text-center text-sm mb-6">Are you sure you want to delete this notebook? This action cannot be undone and will delete all associated sources.</p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setNotebookToDelete(null)}
+                                className="flex-1 px-4 py-2.5 text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg font-semibold transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteNotebook}
+                                className="flex-1 px-4 py-2.5 text-white bg-red-600 hover:bg-red-500 rounded-lg font-semibold shadow-md transition-colors"
+                            >
+                                Delete
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

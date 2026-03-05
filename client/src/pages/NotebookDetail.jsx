@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ChevronLeft, Plus, FileText, Globe, Youtube, AlignLeft, Send, Loader2, Bot, User } from 'lucide-react';
+import { ChevronLeft, Plus, FileText, Globe, Youtube, AlignLeft, Send, Loader2, Bot, User, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -11,6 +11,7 @@ const NotebookDetail = () => {
     const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
     const [viewingSourceText, setViewingSourceText] = useState(null);
     const [selectedSources, setSelectedSources] = useState([]);
+    const [sourceToDelete, setSourceToDelete] = useState(null);
 
     // Source states
     const [sourceType, setSourceType] = useState('pdf'); // pdf, url, youtube, text
@@ -63,6 +64,23 @@ const NotebookDetail = () => {
                 ? prev.filter(id => id !== sourceId)
                 : [...prev, sourceId]
         );
+    };
+
+    const handleDeleteSource = async () => {
+        if (!sourceToDelete) return;
+
+        try {
+            const token = localStorage.getItem('token');
+            await axios.delete(`${import.meta.env.VITE_API_URL}/api/sources/${id}/${sourceToDelete}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            fetchNotebookDetails();
+            setSelectedSources(prev => prev.filter(sId => sId !== sourceToDelete));
+            setSourceToDelete(null);
+        } catch (err) {
+            console.error('Failed to delete source:', err);
+            alert('Failed to delete source');
+        }
     };
 
     const fetchChatHistory = async () => {
@@ -231,10 +249,20 @@ const NotebookDetail = () => {
                                         {source.type === 'youtube' && <Youtube className="h-4 w-4" />}
                                         {source.type === 'text' && <AlignLeft className="h-4 w-4" />}
                                     </div>
-                                    <div className="flex-1 min-w-0">
+                                    <div className="flex-1 min-w-0 pr-2">
                                         <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-brand-700 transition-colors">{source.title}</p>
                                         <p className="text-[11px] font-medium text-slate-400 uppercase tracking-widest mt-1">{source.type}</p>
                                     </div>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSourceToDelete(source._id);
+                                        }}
+                                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                                        title="Delete Source"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
                                 </div>
                             ))
                         )}
@@ -428,6 +456,10 @@ const NotebookDetail = () => {
                                                 required
                                             />
                                         </div>
+                                        <p className="mt-2 text-[11px] text-slate-500 font-medium flex items-center gap-1.5">
+                                            <Globe className="h-3 w-3" />
+                                            Only websites that allow web crawling/scraping can be analyzed. Sites with strict bot protection may fail to import.
+                                        </p>
                                     </div>
                                 )}
 
@@ -506,6 +538,33 @@ const NotebookDetail = () => {
                                 className="px-6 py-2.5 text-sm w-32 text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl font-semibold transition-all shadow-sm"
                             >
                                 Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Source Confirmation Modal */}
+            {sourceToDelete && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all scale-100 border border-slate-100 animate-slide-up p-6">
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-4 mx-auto">
+                            <Trash2 className="h-6 w-6 text-red-600" />
+                        </div>
+                        <h3 className="text-xl font-bold text-center text-slate-900 mb-2">Delete Source</h3>
+                        <p className="text-slate-500 text-center text-sm mb-6">Are you sure you want to delete this source? This action cannot be undone.</p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setSourceToDelete(null)}
+                                className="flex-1 px-4 py-2.5 text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg font-semibold transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteSource}
+                                className="flex-1 px-4 py-2.5 text-white bg-red-600 hover:bg-red-500 rounded-lg font-semibold shadow-md transition-colors"
+                            >
+                                Delete
                             </button>
                         </div>
                     </div>
