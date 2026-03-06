@@ -5,9 +5,11 @@ import { PlusCircle, Search, LogOut, BookOpen, Clock, Settings, Bell, LayoutDash
 
 const Dashboard = () => {
     const [notebooks, setNotebooks] = useState([]);
+    const [fetchError, setFetchError] = useState('');
     const [user, setUser] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [notebookToDelete, setNotebookToDelete] = useState(null);
+    const [createError, setCreateError] = useState('');
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
@@ -33,6 +35,7 @@ const Dashboard = () => {
     };
 
     const fetchNotebooks = async () => {
+        setFetchError('');
         try {
             const token = localStorage.getItem('token');
             const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/api/notebooks`, {
@@ -40,15 +43,19 @@ const Dashboard = () => {
             });
             setNotebooks(data);
         } catch (err) {
+            console.error('Fetch notebooks error:', err);
             if (err.response?.status === 401) {
                 localStorage.removeItem('token');
                 navigate('/login');
+            } else {
+                setFetchError(err.response?.data?.message || err.response?.data?.error || 'Failed to fetch notebooks in dashboard. Please check your connection and try again.');
             }
         }
     };
 
     const handleCreateNotebook = async (e) => {
         e.preventDefault();
+        setCreateError('');
         try {
             const token = localStorage.getItem('token');
             await axios.post(`${import.meta.env.VITE_API_URL}/api/notebooks`, { title, description }, {
@@ -59,7 +66,8 @@ const Dashboard = () => {
             setDescription('');
             fetchNotebooks();
         } catch (err) {
-            console.error(err);
+            console.error('Failed to create notebook:', err);
+            setCreateError(err.response?.data?.message || err.response?.data?.error || 'Failed to create notebook. Please try again.');
         }
     };
 
@@ -180,7 +188,7 @@ const Dashboard = () => {
                             <LogOut className="h-5 w-5" />
                         </button>
                         <button
-                            onClick={() => setIsModalOpen(true)}
+                            onClick={() => { setIsModalOpen(true); setCreateError(''); }}
                             className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-all font-medium shadow-sm hover:shadow active:scale-95"
                         >
                             <PlusCircle className="h-4 w-4" />
@@ -200,7 +208,26 @@ const Dashboard = () => {
                             <p className="text-slate-500 text-sm mt-1">Manage and chat with your document collections.</p>
                         </div>
 
-                        {notebooks.length === 0 ? (
+                        {fetchError && (
+                            <div className="mb-8 bg-red-50 border border-red-100 rounded-xl p-5 flex items-start gap-4 animate-fade-in shadow-sm">
+                                <div className="bg-red-100 p-2 rounded-full shrink-0 mt-0.5">
+                                    <LogOut className="h-5 w-5 text-red-600 rotate-180" />
+                                </div>
+                                <div>
+                                    <h3 className="text-red-800 font-bold mb-1">Could not load notebooks</h3>
+                                    <p className="text-sm text-red-700 font-medium leading-relaxed">{fetchError}</p>
+                                    <button
+                                        onClick={fetchNotebooks}
+                                        className="mt-3 text-[13px] font-bold text-red-600 hover:text-red-700 hover:underline inline-flex items-center gap-1.5"
+                                    >
+                                        <Clock className="h-3 w-3" />
+                                        Try again
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {notebooks.length === 0 && !fetchError ? (
                             <div className="text-center py-24 bg-white rounded-2xl border border-dashed border-slate-300 shadow-sm animate-fade-in relative overflow-hidden">
                                 <div className="absolute inset-0 bg-gradient-to-b from-brand-50/50 to-transparent opacity-50"></div>
                                 <div className="relative z-10">
@@ -210,7 +237,7 @@ const Dashboard = () => {
                                     <h3 className="text-xl font-bold text-slate-900 mb-2">No notebooks yet</h3>
                                     <p className="text-slate-500 mb-6 max-w-sm mx-auto">Create your first notebook to start adding sources and asking questions about your data.</p>
                                     <button
-                                        onClick={() => setIsModalOpen(true)}
+                                        onClick={() => { setIsModalOpen(true); setCreateError(''); }}
                                         className="inline-flex items-center gap-2 bg-brand-600 text-white px-6 py-2.5 rounded-lg hover:bg-brand-500 font-semibold shadow-md transition-all active:scale-95"
                                     >
                                         <PlusCircle className="h-5 w-5" />
@@ -295,13 +322,19 @@ const Dashboard = () => {
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100 border border-slate-100 animate-slide-up">
                         <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center">
                             <h3 className="text-xl font-bold font-display text-slate-900">Create New Notebook</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 p-1.5 rounded-full transition-colors">
+                            <button onClick={() => { setIsModalOpen(false); setCreateError(''); }} className="text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 p-1.5 rounded-full transition-colors">
                                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
                         </div>
                         <form onSubmit={handleCreateNotebook} className="p-6">
+                            {createError && (
+                                <div className="mb-4 p-3 bg-red-50 text-red-600 text-[13px] font-medium rounded-lg border border-red-100 flex items-start gap-2 animate-fade-in">
+                                    <span className="mt-0.5 shrink-0">⚠️</span>
+                                    <span>{createError}</span>
+                                </div>
+                            )}
                             <div className="mb-5">
                                 <label className="block text-sm font-semibold text-slate-900 mb-1.5">Notebook Title</label>
                                 <input
@@ -326,7 +359,7 @@ const Dashboard = () => {
                             <div className="flex justify-end gap-3 pt-2">
                                 <button
                                     type="button"
-                                    onClick={() => setIsModalOpen(false)}
+                                    onClick={() => { setIsModalOpen(false); setCreateError(''); }}
                                     className="px-5 py-2.5 text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg font-semibold transition-colors"
                                 >
                                     Cancel

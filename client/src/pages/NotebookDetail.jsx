@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm';
 const NotebookDetail = () => {
     const { id } = useParams();
     const [notebook, setNotebook] = useState(null);
+    const [error, setError] = useState(null);
     const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
     const [viewingSourceText, setViewingSourceText] = useState(null);
     const [selectedSources, setSelectedSources] = useState([]);
@@ -21,6 +22,7 @@ const NotebookDetail = () => {
     const [inlineSearchQuery, setInlineSearchQuery] = useState('');
     const [sourceFile, setSourceFile] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [sourceError, setSourceError] = useState('');
 
     // Chat states
     const [messages, setMessages] = useState([
@@ -56,6 +58,7 @@ const NotebookDetail = () => {
             }
         } catch (err) {
             console.error('Fetch notebook details error:', err);
+            setError('Notebook is not present');
         }
     };
 
@@ -122,6 +125,7 @@ const NotebookDetail = () => {
     const handleAddSource = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
         setIsUploading(true);
+        setSourceError('');
         try {
             const token = localStorage.getItem('token');
             const formData = new FormData();
@@ -145,10 +149,11 @@ const NotebookDetail = () => {
             setSourceTitle('');
             setSourceContent('');
             setSourceFile(null);
+            setSourceError('');
             fetchNotebookDetails();
         } catch (err) {
             console.error(err);
-            alert(err.response?.data?.message || 'Failed to add source');
+            setSourceError(err.response?.data?.message || err.response?.data?.error || 'Failed to add source');
         } finally {
             setIsUploading(false);
         }
@@ -216,6 +221,21 @@ const NotebookDetail = () => {
         }
     };
 
+    if (error) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-surface-50 p-6">
+                <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center max-w-md w-full animate-fade-in">
+                    <FileText className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                    <h2 className="text-2xl font-bold font-display text-slate-900 mb-2">Notebook Not Found</h2>
+                    <p className="text-slate-500 mb-6 font-medium">{error}</p>
+                    <Link to="/dashboard" className="inline-flex items-center justify-center w-full px-6 py-3 text-sm font-bold text-white bg-brand-600 hover:bg-brand-500 rounded-xl shadow-md shadow-brand-500/20 transition-all">
+                        Return to Dashboard
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
     if (!notebook) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-surface-50">
@@ -263,7 +283,7 @@ const NotebookDetail = () => {
                 <aside className={`${mobileTab === 'sources' ? 'flex w-full' : 'hidden'} md:flex md:w-80 border-r border-slate-200 bg-white flex-col z-10 shadow-sm relative overflow-hidden`}>
                     <div className="p-4 flex flex-col gap-4 border-b border-slate-200">
                         <button
-                            onClick={() => setIsSourceModalOpen(true)}
+                            onClick={() => { setIsSourceModalOpen(true); setSourceError(''); }}
                             className="w-full py-2.5 px-4 rounded-3xl border-2 border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
                             title="Add Source"
                         >
@@ -461,13 +481,19 @@ const NotebookDetail = () => {
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 animate-slide-up">
                         <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-surface-50">
                             <h3 className="text-xl font-bold font-display text-slate-900">Add Knowledge Source</h3>
-                            <button onClick={() => setIsSourceModalOpen(false)} className="text-slate-400 hover:text-slate-600 bg-white p-1.5 rounded-full shadow-sm hover:shadow transition-all" disabled={isUploading}>
+                            <button onClick={() => { setIsSourceModalOpen(false); setSourceError(''); }} className="text-slate-400 hover:text-slate-600 bg-white p-1.5 rounded-full shadow-sm hover:shadow transition-all" disabled={isUploading}>
                                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
                         </div>
                         <form onSubmit={handleAddSource} className="p-6 md:p-8">
+                            {sourceError && (
+                                <div className="mb-5 p-3 bg-red-50 text-red-600 text-[13px] font-medium rounded-xl border border-red-100 flex items-start gap-2 animate-fade-in">
+                                    <span className="mt-0.5 shrink-0">⚠️</span>
+                                    <span>{sourceError}</span>
+                                </div>
+                            )}
 
                             <div className="mb-6">
                                 <label className="block text-sm font-semibold text-slate-900 mb-3">Source Type</label>
@@ -589,7 +615,7 @@ const NotebookDetail = () => {
                             <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-slate-100">
                                 <button
                                     type="button"
-                                    onClick={() => setIsSourceModalOpen(false)}
+                                    onClick={() => { setIsSourceModalOpen(false); setSourceError(''); }}
                                     className="px-5 py-2.5 text-sm w-32 text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl font-semibold transition-all shadow-sm"
                                     disabled={isUploading}
                                 >
