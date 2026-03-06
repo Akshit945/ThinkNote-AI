@@ -124,7 +124,7 @@ router.post('/:notebookId', auth, async (req, res) => {
         const SYSTEM_PROMPT = `
             You are an AI assistant helping students inside a notebook.
 
-            Answer the user's question using ONLY the provided context and relevant user facts.
+            Answer the user's question using ONLY the provided context.
 
 
             Rules:
