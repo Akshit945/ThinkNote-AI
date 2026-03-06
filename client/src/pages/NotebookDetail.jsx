@@ -392,7 +392,7 @@ const NotebookDetail = () => {
                                         {/* Render Source metadata if it's an assistant response with sources */}
                                         {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && (
                                             <div className="mt-4 pt-4 border-t border-slate-100">
-                                                <p className="text-[11px] font-semibold text-slate-400 mb-2.5 uppercase tracking-widest flex items-center gap-1.5"><FileText className="h-3 w-3" /> Sources Cited</p>
+                                                <p className="text-[11px] font-semibold text-slate-400 mb-2.5 uppercase tracking-widest flex items-center gap-1.5"><FileText className="h-3 w-3" /> Sources Used</p>
                                                 <div className="flex flex-wrap gap-2">
                                                     {Array.from(new Map(msg.sources.map(s => {
                                                         const label = s.title + (s.loc?.pageNumber ? ` - Page ${s.loc.pageNumber}` : '');

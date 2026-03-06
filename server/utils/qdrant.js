@@ -1,28 +1,42 @@
-import { OpenAIEmbeddings } from '@langchain/openai';
-import { QdrantVectorStore } from '@langchain/qdrant';
-import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
-import dotenv from 'dotenv';
+import { OpenAIEmbeddings } from "@langchain/openai";
+import { QdrantVectorStore } from "@langchain/qdrant";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import dotenv from "dotenv";
+
 dotenv.config();
 
+/* ---------------- EMBEDDINGS ---------------- */
+
 const embeddings = new OpenAIEmbeddings({
-    model: 'text-embedding-3-small',
-    openAIApiKey: process.env.OPENAI_API_KEY,
+    model: "text-embedding-3-small",
+    apiKey: process.env.OPENAI_API_KEY,
 });
+
+/* ---------------- VECTOR STORE INSTANCE ---------------- */
+
 let vectorStoreInstance = null;
 
 const getVectorStore = async () => {
-    if (!vectorStoreInstance) {
-        vectorStoreInstance = await QdrantVectorStore.fromExistingCollection(
-            embeddings, {
-            url: process.env.QDRANT_URL,
-            apiKey: process.env.QDRANT_API_KEY,
-            collectionName: 'rag-collection',
+    try {
+        if (!vectorStoreInstance) {
+            vectorStoreInstance = await QdrantVectorStore.fromExistingCollection(
+                embeddings,
+                {
+                    url: process.env.QDRANT_URL,
+                    apiKey: process.env.QDRANT_API_KEY,
+                    collectionName: "rag-collection",
+                }
+            );
         }
-        );
+
+        return vectorStoreInstance;
+    } catch (error) {
+        console.error("Error creating Qdrant vector store:", error);
+        throw error;
     }
-    return vectorStoreInstance;
 };
 
+/* ---------------- DOCUMENT INDEXING ---------------- */
 
 export const indexDocumentToQdrant = async (data, metadata) => {
     try {
@@ -31,35 +45,48 @@ export const indexDocumentToQdrant = async (data, metadata) => {
             chunkOverlap: 200,
         });
 
-        let docs;
+        let docs = [];
+
         if (Array.isArray(data)) {
-            // It's an array of LangChain Document objects (e.g. from PDFLoader)
             docs = await textSplitter.splitDocuments(
-                data.map(doc => {
-                    // Merge original metadata (like loc.pageNumber) with our custom metadata
+                data.map((doc) => {
                     doc.metadata = { ...doc.metadata, ...metadata };
                     return doc;
                 })
             );
         } else {
-            // It's a plain string
             docs = await textSplitter.createDocuments([data], [metadata]);
         }
 
-        await QdrantVectorStore.fromDocuments(docs, embeddings, {
-            url: process.env.QDRANT_URL,
-            apiKey: process.env.QDRANT_API_KEY,
-            collectionName: 'rag-collection',
-        });
+        const vectorStore = await getVectorStore();
+
+        /* -------- BATCH INSERT (avoids 32MB payload error) -------- */
+
+        const BATCH_SIZE = 50;
+
+        for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+            const batch = docs.slice(i, i + BATCH_SIZE);
+
+            await vectorStore.addDocuments(batch);
+        }
+
+        // console.log(`Indexed ${docs.length} chunks to Qdrant`);
 
         return true;
     } catch (err) {
-        console.error('Error indexing to Qdrant:', err);
+        console.error("Error indexing to Qdrant:", err);
         throw err;
     }
 };
 
-export const searchSimilarChunks = async (query, notebookId, limit = 4, selectedSources = []) => {
+/* ---------------- VECTOR SEARCH ---------------- */
+
+export const searchSimilarChunks = async (
+    query,
+    notebookId,
+    limit = 8,
+    selectedSources = []
+) => {
     try {
         const vectorStore = await getVectorStore();
 
@@ -67,35 +94,40 @@ export const searchSimilarChunks = async (query, notebookId, limit = 4, selected
             must: [
                 {
                     key: "metadata.notebookId",
-                    match: { value: notebookId }
-                }
-            ]
+                    match: { value: notebookId },
+                },
+            ],
         };
 
-        if (selectedSources && selectedSources.length > 0) {
+        if (selectedSources.length > 0) {
             filter.must.push({
                 key: "metadata.sourceId",
-                match: { any: selectedSources }
+                match: { any: selectedSources },
             });
         }
 
-        const results = await vectorStore.similaritySearchWithScore(query, limit, filter);
+        const results = await vectorStore.similaritySearchWithScore(
+            query,
+            limit,
+            filter
+        );
 
-        // Filter out low relevance results (Cosine similarity score)
-        // Adjust this threshold between 0.0 and 1.0 depending on your needs
-        const minRelevanceScore = 0.15;
+        /* -------- FILTER LOW RELEVANCE -------- */
+
+        const MIN_SCORE = 0.20;
+
         const filteredResults = results
             .filter(([doc, score]) => {
-                // console.log('QDRANT SCORE:', doc, score);
-                return score >= minRelevanceScore
+                console.log(doc, score);
+                return score >= MIN_SCORE
             })
-            .map(([doc, score]) => doc);
+            .map(([doc]) => doc);
 
-        console.log('QDRANT RESULTS:', filteredResults);
+        // console.log("Qdrant results:", filteredResults);
 
         return filteredResults;
     } catch (err) {
-        console.error('Error searching in Qdrant:', err);
+        console.error("Error searching Qdrant:", err);
         throw err;
     }
 };
