@@ -348,7 +348,7 @@ const NotebookDetail = () => {
                 </aside>
 
                 {/* Main Content - Chat Area */}
-                <main className={`${mobileTab === 'chat' ? 'flex' : 'hidden'} md:flex flex-1 flex-col bg-transparent relative z-10 w-full`}>
+                <main className={`${mobileTab === 'chat' ? 'flex' : 'hidden'} md:flex flex-1 flex-col bg-transparent w-full overflow-hidden`}>
                     <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
                         <div className="max-w-3xl mx-auto space-y-8 pb-4">
                             {messages.map((msg, index) => (
