@@ -109,8 +109,8 @@ const Dashboard = () => {
             <aside className="w-64 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col hidden md:flex z-10 relative">
                 <div className="h-16 flex items-center px-6 border-b border-slate-100">
                     <div className="flex items-center gap-2">
-                        <div className="bg-brand-600 p-1.5 rounded-lg shadow-sm">
-                            <BookOpen className="text-white h-5 w-5" />
+                        <div className="flex items-center justify-center">
+                            <img src="/logo.png" alt="ThinkNote AI Logo" className="h-7 w-7 object-contain" />
                         </div>
                         <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 tracking-tight">ThinkNote AI</span>
                     </div>
@@ -154,8 +154,8 @@ const Dashboard = () => {
                 {/* Topbar */}
                 <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-10 sticky top-0">
                     <div className="flex items-center md:hidden gap-2">
-                        <div className="bg-brand-600 p-1.5 rounded-lg">
-                            <BookOpen className="text-white h-5 w-5" />
+                        <div className="flex items-center justify-center">
+                            <img src="/logo.png" alt="ThinkNote AI Logo" className="h-6 w-6 object-contain" />
                         </div>
                     </div>
 

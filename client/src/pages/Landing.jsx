@@ -9,8 +9,8 @@ const Landing = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center h-16">
                         <div className="flex items-center gap-2">
-                            <div className="bg-brand-600 p-1.5 rounded-lg">
-                                <BookOpen className="text-white h-5 w-5" />
+                            <div className="flex items-center justify-center">
+                                <img src="/logo.png" alt="ThinkNote AI Logo" className="h-7 w-7 object-contain" />
                             </div>
                             <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 tracking-tight">
                                 ThinkNote AI

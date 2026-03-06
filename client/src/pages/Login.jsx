@@ -39,8 +39,8 @@ const Login = () => {
             <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:flex-none lg:px-20 xl:px-24 w-full max-w-xl mx-auto lg:mx-0 bg-white shadow-2xl lg:shadow-none z-10 relative">
                 <div className="mx-auto w-full max-w-sm lg:w-96">
                     <div className="flex items-center gap-2 mb-8">
-                        <div className="bg-brand-600 p-1.5 rounded-lg">
-                            <BookOpen className="text-white h-6 w-6" />
+                        <div className="flex items-center justify-center">
+                            <img src="/logo.png" alt="ThinkNote AI Logo" className="h-8 w-8 object-contain" />
                         </div>
                         <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 tracking-tight">
                             ThinkNote AI
