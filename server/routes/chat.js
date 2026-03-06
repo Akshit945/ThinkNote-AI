@@ -2,7 +2,7 @@ import express from 'express';
 import Notebook from '../models/Notebook.js';
 import Message from '../models/Message.js';
 import { auth } from '../middleware/auth.js';
-import { searchSimilarChunks } from '../utils/qdrant.js';
+import { runAdvancedRAGPipeline } from '../utils/ragPipeline.js';
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -48,30 +48,7 @@ router.post('/:notebookId', auth, async (req, res) => {
         });
         await userMsg.save();
 
-        // 1. Search Qdrant for relevant chunks
-        const relevantChunks = await searchSimilarChunks(query, notebookId, 4, selectedSources);
-        // console.log('QDRANT RESULTS:', relevantChunks, relevantChunks.length);
-
-        // 2. Format Context
-        const contextStr = relevantChunks.map((chunk, index) => {
-            let titleStr = chunk.metadata?.title || 'Unknown Source';
-            if (chunk.metadata?.loc?.pageNumber) {
-                titleStr += ` - Page ${chunk.metadata.loc.pageNumber}`;
-            }
-            return `--- Document ${index + 1} (${titleStr}) ---\n${chunk.pageContent}`;
-        }).join("\n\n");
-
-        const SYSTEM_PROMPT = `
-      You are an AI assistant functioning inside a notebook similar to Google Classroom.
-      Your task is to help the user by answering their query based strictly on the provided context.
-      Do not hallucinate or use external knowledge outside of the provided context.
-      If the context does not contain the answer, politely state that you cannot answer based on the provided sources.
-
-      Context:
-      ${contextStr}
-    `;
-
-        // Generate OpenAI completion with history context
+        // Fetch past messages for context BEFORE building the query
         const pastMessages = await Message.find({ notebook: notebookId })
             .sort({ createdAt: -1 })
             .limit(10); // last 10 messages for context
@@ -82,11 +59,44 @@ router.post('/:notebookId', auth, async (req, res) => {
             content: m.content
         }));
 
+        // 1. Run the Advanced 9-Step RAG Pipeline
+        const top8Chunks = await runAdvancedRAGPipeline(query, notebookId, selectedSources, chatContext);
+
+        // 2. Format Context
+        const contextStr = top8Chunks.map((chunk, index) => {
+            let titleStr = chunk.metadata?.title || 'Unknown Source';
+            if (chunk.metadata?.loc?.pageNumber) {
+                titleStr += ` - Page ${chunk.metadata.loc.pageNumber}`;
+            }
+            return `--- Document ${index + 1} (${titleStr}) ---\n${chunk.pageContent}`;
+        }).join("\n\n");
+        // console.log("contextStr", contextStr);
+
+        const SYSTEM_PROMPT = `
+You are an AI assistant helping students inside a notebook.
+
+Answer the user's question using ONLY the provided context.
+
+Rules:
+- If the context contains the answer, explain it clearly.
+- If multiple documents contain information, combine them.
+- If the context does NOT contain the answer, say:
+  "The provided sources do not contain enough information to answer this question."
+-Dont write something like this [Documents 1, 4, and 7] in the answer .
+
+
+
+Context:
+${contextStr}
+`;
+
+        // Generate OpenAI completion with history context
         const response = await openai.chat.completions.create({
             model: 'gpt-4o', // or 'gpt-4'/'gpt-3.5-turbo' based on availability
             messages: [
                 { role: 'system', content: SYSTEM_PROMPT },
-                ...chatContext
+                ...chatContext,
+                { role: 'user', content: query }
             ],
             temperature: 0.3,
         });
@@ -97,7 +107,7 @@ router.post('/:notebookId', auth, async (req, res) => {
             notebook: notebookId,
             role: 'assistant',
             content: answer,
-            sources: relevantChunks.map(c => c.metadata)
+            sources: top8Chunks.map(c => c.metadata)
         });
         await aiMsg.save();
 

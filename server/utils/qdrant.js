@@ -154,10 +154,13 @@ export const searchSimilarChunks = async (
 
         const filteredResults = results
             .filter(([doc, score]) => {
-                console.log(doc, score);
+                // console.log(doc, score);
                 return score >= MIN_SCORE
             })
-            .map(([doc]) => doc);
+            .map(([doc, score]) => {
+                doc.qdrantScore = score;
+                return doc;
+            });
 
         // console.log("Qdrant results:", filteredResults);
 
