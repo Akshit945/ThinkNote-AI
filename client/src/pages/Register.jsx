@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { BookOpen, AlertCircle } from 'lucide-react';
+import { BookOpen, AlertCircle, ArrowRight } from 'lucide-react';
 
 const Register = () => {
     const [username, setUsername] = useState('');
@@ -61,14 +61,19 @@ const Register = () => {
             {/* Right side - form */}
             <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:flex-none lg:px-20 xl:px-24 w-full max-w-xl mx-auto lg:mx-0 bg-white shadow-2xl lg:shadow-none z-10 relative">
                 <div className="mx-auto w-full max-w-sm lg:w-96">
-                    <div className="flex items-center gap-2 mb-8">
+                    <Link to="/" className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors mb-8 group">
+                        <ArrowRight className="h-4 w-4 mr-2 rotate-180 group-hover:-translate-x-1 transition-transform" />
+                        Back to Home
+                    </Link>
+
+                    <Link to="/" className="flex items-center gap-2 mb-8 hover:opacity-80 transition-opacity w-fit">
                         <div className="flex items-center justify-center">
                             <img src="/logo.png" alt="ThinkNote AI Logo" className="h-8 w-8 object-contain" />
                         </div>
                         <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 tracking-tight">
                             ThinkNote AI
                         </span>
-                    </div>
+                    </Link>
 
                     <h2 className="mt-6 text-3xl font-display font-bold tracking-tight text-slate-900">
                         Create an account
