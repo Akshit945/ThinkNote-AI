@@ -1,6 +1,7 @@
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { QdrantVectorStore } from "@langchain/qdrant";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import { QdrantClient } from "@qdrant/js-client-rest";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -19,6 +20,41 @@ let vectorStoreInstance = null;
 const getVectorStore = async () => {
     try {
         if (!vectorStoreInstance) {
+            // First ensure the collection and indices exist using the official Qdrant client
+            const client = new QdrantClient({
+                url: process.env.QDRANT_URL,
+                apiKey: process.env.QDRANT_API_KEY,
+            });
+
+            try {
+                // Ensure collection exists
+                const collections = await client.getCollections();
+                const collectionExists = collections.collections.some(c => c.name === "rag-collection");
+
+                if (!collectionExists) {
+                    await client.createCollection("rag-collection", {
+                        vectors: {
+                            size: 1536,
+                            distance: "Cosine"
+                        }
+                    });
+                }
+
+                // Create indices for fast filtering
+                await client.createPayloadIndex("rag-collection", {
+                    field_name: "metadata.notebookId",
+                    field_schema: "keyword", // Enables exact match filtering
+                });
+                await client.createPayloadIndex("rag-collection", {
+                    field_name: "metadata.sourceId",
+                    field_schema: "keyword",
+                });
+            } catch (indexErr) {
+                // Ignore if it already exists or other non-fatal errors
+                console.log("Index creation note:", indexErr.message);
+            }
+
+            // Fallback to initial QdrantVectorStore implementation
             vectorStoreInstance = await QdrantVectorStore.fromExistingCollection(
                 embeddings,
                 {
