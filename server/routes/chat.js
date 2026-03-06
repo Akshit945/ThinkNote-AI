@@ -52,24 +52,6 @@ router.post('/:notebookId', auth, async (req, res) => {
         const relevantChunks = await searchSimilarChunks(query, notebookId, 4, selectedSources);
         // console.log('QDRANT RESULTS:', relevantChunks, relevantChunks.length);
 
-        // if (!relevantChunks || relevantChunks.length === 0) {
-        //     const emptySourcesAns = "I couldn't find any relevant information in your sources to answer this question.";
-        //     const aiMsg = new Message({
-        //         notebook: notebookId,
-        //         role: 'assistant',
-        //         content: emptySourcesAns,
-        //         sources: []
-        //     });
-        //     console.log("here is empty sources ans", emptySourcesAns);
-
-        //     await aiMsg.save();
-
-        //     return res.json({
-        //         answer: emptySourcesAns,
-        //         sources: []
-        //     });
-        // }
-
         // 2. Format Context
         const contextStr = relevantChunks.map((chunk, index) => {
             let titleStr = chunk.metadata?.title || 'Unknown Source';
