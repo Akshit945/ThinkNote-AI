@@ -49,6 +49,26 @@ router.get('/:id', auth, async (req, res) => {
     }
 });
 
+// Update notebook notes
+router.put('/:id/notes', auth, async (req, res) => {
+    try {
+        const { notes } = req.body;
+        const notebook = await Notebook.findOneAndUpdate(
+            { _id: req.params.id, owner: req.user },
+            { notes },
+            { new: true }
+        );
+
+        if (!notebook) {
+            return res.status(404).json({ message: 'Notebook not found' });
+        }
+
+        res.json(notebook);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Delete a notebook and its sources
 router.delete('/:id', auth, async (req, res) => {
     try {

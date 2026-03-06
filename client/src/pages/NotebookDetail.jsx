@@ -13,7 +13,20 @@ const NotebookDetail = () => {
     const [viewingSourceText, setViewingSourceText] = useState(null);
     const [selectedSources, setSelectedSources] = useState([]);
     const [sourceToDelete, setSourceToDelete] = useState(null);
-    const [mobileTab, setMobileTab] = useState('chat'); // 'sources' | 'chat'
+    const [mobileTab, setMobileTab] = useState('chat'); // 'sources' | 'chat' | 'rightPanel'
+    const [rightDesktopTab, setRightDesktopTab] = useState('notes'); // 'notes' | 'quiz'
+
+    // Right Sidebar States
+    const [notesText, setNotesText] = useState('');
+    const [isSavingNotes, setIsSavingNotes] = useState(false);
+    const notesTimeoutRef = useRef(null);
+
+    // Quiz States
+    const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+    const [quizData, setQuizData] = useState(null);
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [userAnswers, setUserAnswers] = useState({});
+    const [quizError, setQuizError] = useState('');
 
     // Source states
     const [sourceType, setSourceType] = useState('pdf'); // pdf, url, youtube, text, web_search
@@ -52,6 +65,9 @@ const NotebookDetail = () => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setNotebook(data);
+            if (data.notes) {
+                setNotesText(data.notes);
+            }
             if (data.sources) {
                 // Default to all sources selected
                 setSelectedSources(data.sources.map(s => s._id));
@@ -100,6 +116,81 @@ const NotebookDetail = () => {
         } catch (err) {
             console.error('Fetch chat history error:', err);
         }
+    };
+
+    const handleNotesChange = (e) => {
+        const newText = e.target.value;
+        setNotesText(newText);
+
+        // Auto-save debounce
+        if (notesTimeoutRef.current) {
+            clearTimeout(notesTimeoutRef.current);
+        }
+
+        notesTimeoutRef.current = setTimeout(() => {
+            saveNotes(newText);
+        }, 1500); // Save after 1.5 seconds of inactivity
+    };
+
+    const saveNotes = async (textToSave) => {
+        setIsSavingNotes(true);
+        try {
+            const token = localStorage.getItem('token');
+            await axios.put(`${import.meta.env.VITE_API_URL}/api/notebooks/${id}/notes`, {
+                notes: textToSave
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+        } catch (err) {
+            console.error('Failed to save notes:', err);
+        } finally {
+            setIsSavingNotes(false);
+        }
+    };
+
+    const handleGenerateQuiz = async () => {
+        if (selectedSources.length === 0) return;
+        setIsGeneratingQuiz(true);
+        setQuizError('');
+        setQuizData(null);
+        setUserAnswers({});
+        setCurrentQuestionIndex(0);
+
+        try {
+            const token = localStorage.getItem('token');
+            const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/api/chat/${id}/quiz`, {
+                selectedSources
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (data && data.quiz && data.quiz.length > 0) {
+                setQuizData(data.quiz);
+            } else {
+                setQuizError('Could not generate quiz from the selected sources. Please ensure sources contain enough factual text.');
+            }
+        } catch (err) {
+            console.error('Quiz generation error:', err);
+            setQuizError(err.response?.data?.error || err.response?.data?.message || 'Failed to generate quiz. Check your connection or API keys.');
+        } finally {
+            setIsGeneratingQuiz(false);
+        }
+    };
+
+    const handleQuizOptionSelect = (option) => {
+        setUserAnswers(prev => ({
+            ...prev,
+            [currentQuestionIndex]: option
+        }));
+    };
+
+    const calculateQuizScore = () => {
+        if (!quizData) return 0;
+        let score = 0;
+        quizData.forEach((q, idx) => {
+            if (userAnswers[idx] === q.answer) score++;
+        });
+        return score;
     };
 
     const handleViewSource = (source, pageNumber = null) => {
@@ -272,6 +363,12 @@ const NotebookDetail = () => {
                     className={`flex-1 py-3 text-sm font-semibold border-b-2 transition-all ${mobileTab === 'chat' ? 'border-brand-600 text-brand-700 bg-brand-50/50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
                 >
                     Chat
+                </button>
+                <button
+                    onClick={() => setMobileTab('rightPanel')}
+                    className={`flex-1 py-3 text-sm font-semibold border-b-2 transition-all ${mobileTab === 'rightPanel' ? 'border-brand-600 text-brand-700 bg-brand-50/50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                >
+                    Notes & Quiz
                 </button>
             </div>
 
@@ -473,6 +570,190 @@ const NotebookDetail = () => {
                         </div>
                     </div>
                 </main>
+
+                {/* Right Sidebar - Notes & Quiz */}
+                <aside className={`${mobileTab === 'rightPanel' ? 'flex w-full' : 'hidden'} md:flex md:w-[360px] border-l border-slate-200 bg-white flex-col z-10 shadow-sm relative overflow-hidden`}>
+                    <div className="flex border-b border-slate-200 bg-slate-50/50">
+                        <button
+                            onClick={() => setRightDesktopTab('notes')}
+                            className={`flex flex-1 items-center justify-center gap-2 py-3.5 text-sm font-semibold border-b-2 transition-all ${rightDesktopTab === 'notes' ? 'border-brand-600 text-brand-700 bg-white shadow-sm' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-white/50'}`}
+                        >
+                            <AlignLeft className="h-4 w-4" />
+                            Notes
+                        </button>
+                        <button
+                            onClick={() => setRightDesktopTab('quiz')}
+                            className={`flex flex-1 items-center justify-center gap-2 py-3.5 text-sm font-semibold border-b-2 transition-all ${rightDesktopTab === 'quiz' ? 'border-brand-600 text-brand-700 bg-white shadow-sm' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-white/50'}`}
+                        >
+                            <Sparkles className="h-4 w-4" />
+                            Quiz
+                        </button>
+                    </div>
+
+                    <div className="flex flex-1 overflow-hidden bg-white">
+                        {rightDesktopTab === 'notes' ? (
+                            <div className="flex flex-col flex-1 p-4">
+                                <div className="flex items-center justify-between mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                                    <span>Personal Notes</span>
+                                    {isSavingNotes ? (
+                                        <span className="flex items-center gap-1.5 text-brand-600 normal-case tracking-normal animate-pulse">
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving...
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center gap-1.5 text-slate-400 normal-case tracking-normal">
+                                            Saved
+                                        </span>
+                                    )}
+                                </div>
+                                <textarea
+                                    value={notesText}
+                                    onChange={handleNotesChange}
+                                    placeholder="Jot down important concepts, summaries, or questions here..."
+                                    className="flex-1 w-full bg-slate-50/50 border border-slate-200 rounded-xl p-4 text-[14px] text-slate-700 leading-relaxed focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 resize-none transition-all shadow-inner"
+                                />
+                            </div>
+                        ) : (
+                            <div className="flex flex-col flex-1 p-5 overflow-y-auto w-full relative">
+                                {!quizData && !isGeneratingQuiz && (
+                                    <div className="text-center py-10 my-auto">
+                                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4 scale-110">
+                                            <Sparkles className="h-6 w-6 text-purple-600" />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-slate-900 mb-2">Knowledge Check</h3>
+                                        <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+                                            Test your understanding. We'll generate a 10-question multiple-choice quiz based purely on your currently selected sources.
+                                        </p>
+
+                                        {quizError && (
+                                            <div className="mb-6 p-3 bg-red-50 text-red-600 text-[13px] font-semibold rounded-xl border border-red-100 text-left">
+                                                {quizError}
+                                            </div>
+                                        )}
+
+                                        <button
+                                            onClick={handleGenerateQuiz}
+                                            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-full shadow-md transition-all active:scale-95 disabled:opacity-50"
+                                            disabled={selectedSources.length === 0}
+                                        >
+                                            <Sparkles className="h-4 w-4" />
+                                            Generate Quiz
+                                        </button>
+
+                                        {selectedSources.length === 0 && (
+                                            <p className="text-xs text-red-500 mt-4 font-medium">Please select at least one source from the left sidebar first.</p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {isGeneratingQuiz && (
+                                    <div className="text-center py-10 my-auto animate-pulse flex flex-col items-center">
+                                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <Loader2 className="h-6 w-6 text-purple-600 animate-spin" />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-slate-900 mb-2">Analyzing Sources...</h3>
+                                        <p className="text-sm text-slate-500 leading-relaxed max-w-[250px]">Reading through your documents to synthesize intelligent questions. This takes just a moment.</p>
+                                    </div>
+                                )}
+
+                                {quizData && currentQuestionIndex < quizData.length && (
+                                    <div className="flex flex-col h-full animate-fade-in relative pt-2">
+                                        <div className="flex items-center justify-between mb-5">
+                                            <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Question {currentQuestionIndex + 1} of {quizData.length}</span>
+                                            <div className="flex gap-1 bg-slate-100 p-1 rounded-full">
+                                                {quizData.map((_, i) => (
+                                                    <div key={i} className={`w-1.5 h-1.5 rounded-full ${i === currentQuestionIndex ? 'bg-brand-600' : i < currentQuestionIndex ? 'bg-brand-300' : 'bg-slate-300'}`} />
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <h4 className="text-[14px] font-bold text-slate-900 leading-relaxed mb-5">
+                                            {quizData[currentQuestionIndex].question}
+                                        </h4>
+
+                                        <div className="space-y-2.5 mb-8">
+                                            {quizData[currentQuestionIndex].options.map((option, idx) => {
+                                                const isSelected = userAnswers[currentQuestionIndex] === option;
+                                                const hasAnswered = userAnswers[currentQuestionIndex] !== undefined;
+                                                const isCorrectOption = option === quizData[currentQuestionIndex].answer;
+
+                                                let optionStyles = "bg-white border-slate-200 hover:border-brand-300 hover:bg-slate-50 text-slate-700";
+
+                                                if (hasAnswered) {
+                                                    if (isCorrectOption) {
+                                                        optionStyles = "bg-green-50 border-green-300 text-green-800 ring-1 ring-green-500/20 shadow-sm";
+                                                    } else if (isSelected && !isCorrectOption) {
+                                                        optionStyles = "bg-red-50 border-red-300 text-red-800 opacity-80";
+                                                    } else {
+                                                        optionStyles = "bg-slate-50/50 border-slate-200 text-slate-400 opacity-60";
+                                                    }
+                                                } else if (isSelected) {
+                                                    optionStyles = "bg-brand-50 border-brand-400 text-brand-800 ring-1 ring-brand-500/20";
+                                                }
+
+                                                return (
+                                                    <button
+                                                        key={idx}
+                                                        onClick={() => !hasAnswered && handleQuizOptionSelect(option)}
+                                                        disabled={hasAnswered}
+                                                        className={`w-full text-left p-3.5 rounded-xl border text-[13px] font-medium transition-all ${optionStyles}`}
+                                                    >
+                                                        {option}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {userAnswers[currentQuestionIndex] !== undefined && (
+                                            <div className="mt-auto animate-slide-up pb-4">
+                                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4 shadow-inner">
+                                                    <p className="text-[13px] text-slate-700 leading-relaxed"><span className="font-bold">Explanation:</span> {quizData[currentQuestionIndex].explanation}</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
+                                                    className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 text-sm"
+                                                >
+                                                    {currentQuestionIndex === quizData.length - 1 ? 'See Final Score' : 'Next Question'} <ArrowRight className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {quizData && currentQuestionIndex >= quizData.length && (
+                                    <div className="text-center flex flex-col items-center justify-center h-full animate-slide-up pb-10">
+                                        <div className="w-20 h-20 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-6 relative shadow-inner">
+                                            <Sparkles className="h-10 w-10 text-brand-600" />
+                                            {calculateQuizScore() >= (quizData.length / 2) && (
+                                                <div className="absolute -top-2 -right-2 text-2xl animate-bounce">🎉</div>
+                                            )}
+                                        </div>
+                                        <h3 className="text-2xl font-bold font-display text-slate-900 mb-2">Quiz Complete!</h3>
+                                        <p className="text-slate-500 font-medium mb-8">You scored <span className="text-brand-600 font-bold text-lg">{calculateQuizScore()}</span> out of {quizData.length}</p>
+
+                                        <div className="flex flex-col gap-3 w-full max-w-[200px] mx-auto">
+                                            <button
+                                                onClick={() => {
+                                                    setQuizData(null);
+                                                    setCurrentQuestionIndex(0);
+                                                    setUserAnswers({});
+                                                }}
+                                                className="w-full py-2.5 bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-xl hover:bg-slate-50 transition-all shadow-sm"
+                                            >
+                                                Close Quiz
+                                            </button>
+                                            <button
+                                                onClick={handleGenerateQuiz}
+                                                className="w-full py-2.5 bg-brand-600 text-white text-sm font-bold rounded-xl hover:bg-brand-500 transition-all shadow-md active:scale-95"
+                                            >
+                                                Generate New Quiz
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </aside>
             </div>
 
             {/* Add Source Modal */}

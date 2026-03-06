@@ -3,6 +3,7 @@ import Notebook from '../models/Notebook.js';
 import Message from '../models/Message.js';
 import { auth } from '../middleware/auth.js';
 import { runAdvancedRAGPipeline } from '../utils/ragPipeline.js';
+import { searchSimilarChunks } from '../utils/qdrant.js';
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -118,6 +119,65 @@ ${contextStr}
 
     } catch (err) {
         console.error('Chat error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Generate a Quiz from selected sources
+router.post('/:notebookId/quiz', auth, async (req, res) => {
+    try {
+        const { notebookId } = req.params;
+        const { selectedSources } = req.body;
+
+        const notebook = await Notebook.findOne({ _id: notebookId, owner: req.user });
+        if (!notebook) {
+            return res.status(404).json({ message: 'Notebook not found' });
+        }
+
+        // 1. Broad fetch for quiz context (up to 20 chunks should be plenty for 10 questions)
+        const quizQueryStr = "Core factual concepts, summaries, definitions, key events, and important entities suitable for multiple choice questions.";
+        const chunks = await searchSimilarChunks(quizQueryStr, notebookId, 20, selectedSources);
+
+        if (!chunks || chunks.length === 0) {
+            return res.status(400).json({ message: 'No content found in selected sources to generate a quiz.' });
+        }
+
+        const contextStr = chunks.map((chunk, index) => {
+            return `--- Extract ${index + 1} ---\n${chunk.pageContent}`;
+        }).join("\n\n");
+
+        const SYSTEM_PROMPT = `
+            You are an expert educator creating a challenging, accurate multiple-choice quiz.
+            Using ONLY the provided context extracts, generate exactly 10 multiple-choice questions.
+
+            Output strictly as a JSON object with this exact schema:
+            {
+            "quiz": [
+                {
+                "question": "The question text?",
+                "options": ["Option A", "Option B", "Option C", "Option D"],
+                "answer": "The exact string of the correct option",
+                "explanation": "Brief reasoning based on the text."
+                }
+            ]
+            }
+
+            Context Extracts:
+            ${contextStr}
+        `;
+
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [{ role: 'system', content: SYSTEM_PROMPT }],
+            temperature: 0.3,
+            response_format: { type: 'json_object' }
+        });
+
+        const quizData = JSON.parse(response.choices[0].message.content);
+        res.json(quizData);
+
+    } catch (err) {
+        console.error('Quiz generation error:', err);
         res.status(500).json({ error: err.message });
     }
 });

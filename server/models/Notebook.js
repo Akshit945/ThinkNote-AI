@@ -10,6 +10,10 @@ const notebookSchema = new mongoose.Schema({
         type: String,
         trim: true,
     },
+    notes: {
+        type: String,
+        default: "",
+    },
     owner: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
