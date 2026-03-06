@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { BookOpen, Search, Zap, Shield, ArrowRight, Github, Sparkles, Youtube, AlignLeft, Bot, Globe } from 'lucide-react';
+import { BookOpen, Search, Zap, Shield, ArrowRight, Github, Sparkles, Youtube, AlignLeft, Bot, Globe, Brain } from 'lucide-react';
 
 const Landing = () => {
     return (
@@ -172,7 +172,16 @@ const Landing = () => {
                             </div>
 
                             {/* Feature 6 */}
-                            <div className="bg-white/80 backdrop-blur-sm rounded-[2rem] p-8 shadow-sm border border-slate-200 hover:shadow-md transition-shadow lg:col-span-3 flex flex-col sm:flex-row gap-8 items-center bg-[url('https://grainy-gradients.vercel.app/noise.svg')] blend-overlay">
+                            <div className="bg-white/80 backdrop-blur-sm rounded-[2rem] p-8 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                                <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center mb-6">
+                                    <Brain className="h-6 w-6 text-indigo-600" />
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-900 mb-2">Long-Term AI Memory</h3>
+                                <p className="text-sm text-slate-600 leading-relaxed">Powered by Mem0, the assistant securely remembers your personal facts and preferences across all your notebooks globally.</p>
+                            </div>
+
+                            {/* Feature 7 - Enterprise */}
+                            <div className="bg-white/80 backdrop-blur-sm rounded-[2rem] p-8 shadow-sm border border-slate-200 hover:shadow-md transition-shadow lg:col-span-2 flex flex-col sm:flex-row gap-8 items-center bg-[url('https://grainy-gradients.vercel.app/noise.svg')] blend-overlay">
                                 <div className="flex-1">
                                     <div className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center mb-6">
                                         <Shield className="h-6 w-6 text-slate-700" />

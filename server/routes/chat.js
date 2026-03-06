@@ -6,12 +6,17 @@ import { auth } from '../middleware/auth.js';
 import { runAdvancedRAGPipeline } from '../utils/ragPipeline.js';
 import { searchSimilarChunks } from '../utils/qdrant.js';
 import OpenAI from 'openai';
+import MemoryClient from 'mem0ai';
 import dotenv from 'dotenv';
 dotenv.config();
 
 const router = express.Router();
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
+});
+
+const memClient = new MemoryClient({
+    apiKey: process.env.MEM0_API_KEY
 });
 
 const MAX_DAILY_TOKENS = 100000;
@@ -103,12 +108,24 @@ router.post('/:notebookId', auth, async (req, res) => {
             }
             return `--- Document ${index + 1} (${titleStr}) ---\n${chunk.pageContent}`;
         }).join("\n\n");
-        // console.log("contextStr", contextStr);
+
+        // 3. Fetch Personal Memory
+        let memories = [];
+        try {
+            memories = await memClient.search(query, { user_id: req.user.toString() });
+        } catch (memErr) {
+            console.error("Mem0 search error:", memErr);
+        }
+        const memStr = (Array.isArray(memories) ? memories : [])
+            .filter((e) => e.score > 0.5)
+            .map((e) => e.memory)
+            .join('\n');
 
         const SYSTEM_PROMPT = `
             You are an AI assistant helping students inside a notebook.
 
-            Answer the user's question using ONLY the provided context.
+            Answer the user's question using ONLY the provided context and relevant user facts.
+
 
             Rules:
             - If the context contains the answer, explain it clearly.
@@ -134,7 +151,6 @@ router.post('/:notebookId', auth, async (req, res) => {
 
         const answer = response.choices[0].message.content;
         const usage = response.usage;
-        console.log("usage", usage);
         if (usage && usage.total_tokens) {
             await checkTokenLimit(req.user, usage.total_tokens);
         }
@@ -146,6 +162,16 @@ router.post('/:notebookId', auth, async (req, res) => {
             sources: top8Chunks.map(c => c.metadata)
         });
         await aiMsg.save();
+
+        // 4. Save New Memory back to Mem0
+        try {
+            await memClient.add([
+                { role: 'user', content: query },
+                { role: 'assistant', content: answer }
+            ], { user_id: req.user.toString() });
+        } catch (memErr) {
+            console.error("Mem0 add error:", memErr);
+        }
 
         res.json({
             answer,
