@@ -35,6 +35,22 @@ const Register = () => {
         }
     };
 
+    const handleGuestLogin = async () => {
+        setIsLoading(true);
+        setError('');
+        try {
+            const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
+                email: 'guest@thinknote.ai',
+                password: 'Guest123',
+            });
+            localStorage.setItem('token', data.token);
+            navigate('/dashboard');
+        } catch (err) {
+            setError(err.response?.data?.message || 'Guest Login Failed');
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen flex text-slate-900 bg-surface-50">
             {/* Left side - visual */}
@@ -151,6 +167,27 @@ const Register = () => {
                                 <span className="relative z-10">{isLoading ? 'Creating account...' : 'Create account'}</span>
                             </button>
                         </form>
+
+                        <div className="mt-6">
+                            <div className="relative">
+                                <div className="absolute inset-0 flex items-center">
+                                    <div className="w-full border-t border-slate-300" />
+                                </div>
+                                <div className="relative flex justify-center text-sm">
+                                    <span className="bg-white px-2 text-slate-500">Or continue with</span>
+                                </div>
+                            </div>
+
+                            <div className="mt-6">
+                                <button
+                                    onClick={handleGuestLogin}
+                                    disabled={isLoading}
+                                    className="flex w-full justify-center rounded-lg bg-white px-3 py-3 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                                >
+                                    Log in as Guest
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -1,7 +1,26 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { BookOpen, Search, Zap, Shield, ArrowRight, Github, Sparkles, Youtube, AlignLeft, Bot, Globe, Brain } from 'lucide-react';
 
 const Landing = () => {
+    const navigate = useNavigate();
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleGuestLogin = async () => {
+        setIsLoading(true);
+        try {
+            const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
+                email: 'guest@thinknote.ai',
+                password: 'Guest123',
+            });
+            localStorage.setItem('token', data.token);
+            navigate('/dashboard');
+        } catch (err) {
+            console.error('Guest Login Failed', err);
+            setIsLoading(false);
+        }
+    };
     return (
         <div className="min-h-screen bg-slate-50 font-sans selection:bg-slate-200">
             {/* Navbar */}
@@ -32,6 +51,13 @@ const Landing = () => {
                                 </Link>
                             ) : (
                                 <>
+                                    <button
+                                        onClick={handleGuestLogin}
+                                        disabled={isLoading}
+                                        className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors hidden sm:block disabled:opacity-50"
+                                    >
+                                        {isLoading ? 'Logging in...' : 'Log in as Guest'}
+                                    </button>
                                     <Link
                                         to="/login"
                                         className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors hidden sm:block"
