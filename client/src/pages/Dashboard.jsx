@@ -168,9 +168,16 @@ const Dashboard = () => {
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <button className="relative p-2 text-slate-400 hover:bg-slate-50 rounded-full transition-colors hidden sm:block">
+                        <button className="relative p-2 text-slate-400 hover:bg-slate-50 rounded-full transition-colors hidden sm:block" title="Notifications">
                             <Bell className="h-5 w-5" />
                             <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500"></span>
+                        </button>
+                        <button
+                            onClick={handleLogout}
+                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors md:hidden"
+                            title="Log out"
+                        >
+                            <LogOut className="h-5 w-5" />
                         </button>
                         <button
                             onClick={() => setIsModalOpen(true)}

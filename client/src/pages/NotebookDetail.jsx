@@ -12,6 +12,7 @@ const NotebookDetail = () => {
     const [viewingSourceText, setViewingSourceText] = useState(null);
     const [selectedSources, setSelectedSources] = useState([]);
     const [sourceToDelete, setSourceToDelete] = useState(null);
+    const [mobileTab, setMobileTab] = useState('chat'); // 'sources' | 'chat'
 
     // Source states
     const [sourceType, setSourceType] = useState('pdf'); // pdf, url, youtube, text, web_search
@@ -238,12 +239,28 @@ const NotebookDetail = () => {
                 </div>
             </header>
 
+            {/* Mobile Tabs */}
+            <div className="md:hidden flex bg-white border-b border-slate-200 z-10 sticky top-16 shadow-sm">
+                <button
+                    onClick={() => setMobileTab('sources')}
+                    className={`flex-1 py-3 text-sm font-semibold border-b-2 transition-all ${mobileTab === 'sources' ? 'border-brand-600 text-brand-700 bg-brand-50/50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                >
+                    Sources
+                </button>
+                <button
+                    onClick={() => setMobileTab('chat')}
+                    className={`flex-1 py-3 text-sm font-semibold border-b-2 transition-all ${mobileTab === 'chat' ? 'border-brand-600 text-brand-700 bg-brand-50/50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                >
+                    Chat
+                </button>
+            </div>
+
             <div className="flex flex-1 overflow-hidden relative">
                 {/* Decorative Background grid elements */}
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none z-0"></div>
 
                 {/* Left Sidebar - Sources */}
-                <aside className="w-80 border-r border-slate-200 bg-white flex flex-col hidden md:flex z-10 shadow-sm relative">
+                <aside className={`${mobileTab === 'sources' ? 'flex w-full' : 'hidden'} md:flex md:w-80 border-r border-slate-200 bg-white flex-col z-10 shadow-sm relative overflow-hidden`}>
                     <div className="p-4 flex flex-col gap-4 border-b border-slate-200">
                         <button
                             onClick={() => setIsSourceModalOpen(true)}
@@ -331,7 +348,7 @@ const NotebookDetail = () => {
                 </aside>
 
                 {/* Main Content - Chat Area */}
-                <main className="flex-1 flex flex-col bg-transparent relative z-10 w-full">
+                <main className={`${mobileTab === 'chat' ? 'flex' : 'hidden'} md:flex flex-1 flex-col bg-transparent relative z-10 w-full`}>
                     <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
                         <div className="max-w-3xl mx-auto space-y-8 pb-4">
                             {messages.map((msg, index) => (
