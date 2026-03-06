@@ -23,18 +23,29 @@ const Landing = () => {
                         </div>
 
                         <div className="flex items-center gap-4">
-                            <Link
-                                to="/login"
-                                className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors hidden sm:block"
-                            >
-                                Log in
-                            </Link>
-                            <Link
-                                to="/register"
-                                className="inline-flex items-center justify-center rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 hover:shadow-md transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
-                            >
-                                Get Started
-                            </Link>
+                            {localStorage.getItem('token') ? (
+                                <Link
+                                    to="/dashboard"
+                                    className="inline-flex items-center justify-center rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 hover:shadow-md transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+                                >
+                                    Dashboard
+                                </Link>
+                            ) : (
+                                <>
+                                    <Link
+                                        to="/login"
+                                        className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors hidden sm:block"
+                                    >
+                                        Log in
+                                    </Link>
+                                    <Link
+                                        to="/register"
+                                        className="inline-flex items-center justify-center rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 hover:shadow-md transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+                                    >
+                                        Get Started
+                                    </Link>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -63,21 +74,34 @@ const Landing = () => {
                         </p>
 
                         <div className="animate-slide-up [animation-delay:400ms] mt-10 flex items-center justify-center gap-x-6">
-                            <Link
-                                to="/register"
-                                className="group relative inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-8 py-3.5 text-sm font-semibold text-white shadow-lg hover:bg-slate-800 hover:shadow-xl transition-all w-full sm:w-auto overflow-hidden"
-                            >
-                                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
-                                <span className="relative z-10">Start for free</span>
-                                <ArrowRight className="h-4 w-4 relative z-10 group-hover:translate-x-1 transition-transform" />
-                            </Link>
+                            {localStorage.getItem('token') ? (
+                                <Link
+                                    to="/dashboard"
+                                    className="group relative inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-8 py-3.5 text-sm font-semibold text-white shadow-lg hover:bg-slate-800 hover:shadow-xl transition-all w-full sm:w-auto overflow-hidden"
+                                >
+                                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
+                                    <span className="relative z-10">Go to Dashboard</span>
+                                    <ArrowRight className="h-4 w-4 relative z-10 group-hover:translate-x-1 transition-transform" />
+                                </Link>
+                            ) : (
+                                <>
+                                    <Link
+                                        to="/register"
+                                        className="group relative inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-8 py-3.5 text-sm font-semibold text-white shadow-lg hover:bg-slate-800 hover:shadow-xl transition-all w-full sm:w-auto overflow-hidden"
+                                    >
+                                        <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
+                                        <span className="relative z-10">Start for free</span>
+                                        <ArrowRight className="h-4 w-4 relative z-10 group-hover:translate-x-1 transition-transform" />
+                                    </Link>
 
-                            <Link
-                                to="/login"
-                                className="text-sm font-semibold leading-6 text-slate-900 hover:text-brand-600 transition-colors flex items-center gap-1"
-                            >
-                                View demo <span aria-hidden="true">→</span>
-                            </Link>
+                                    <Link
+                                        to="/login"
+                                        className="text-sm font-semibold leading-6 text-slate-900 hover:text-brand-600 transition-colors flex items-center gap-1"
+                                    >
+                                        View demo <span aria-hidden="true">→</span>
+                                    </Link>
+                                </>
+                            )}
                         </div>
                     </div>
 

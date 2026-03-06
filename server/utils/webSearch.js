@@ -10,9 +10,6 @@ export const extractTextFromWebSearch = async (query) => {
     try {
         const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
 
-        // Use Tavily's search API to get raw content of top results
-        // We use includeRawContent to get the actual scraped HTML/text 
-        // to feed into our RAG system.
         const response = await tvly.search(query, {
             searchDepth: "advanced",
             includeRawContent: true,
