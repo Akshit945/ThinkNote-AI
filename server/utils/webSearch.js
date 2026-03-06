@@ -11,9 +11,9 @@ export const extractTextFromWebSearch = async (query) => {
         const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
 
         const response = await tvly.search(query, {
-            searchDepth: "advanced",
+            searchDepth: "basic",
             includeRawContent: true,
-            maxResults: 3
+            maxResults: 5
         });
 
         if (!response.results || response.results.length === 0) {
