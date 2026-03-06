@@ -150,7 +150,7 @@ export const searchSimilarChunks = async (
 
         /* -------- FILTER LOW RELEVANCE -------- */
 
-        const MIN_SCORE = 0.20;
+        const MIN_SCORE = 0.18;
 
         const filteredResults = results
             .filter(([doc, score]) => {
