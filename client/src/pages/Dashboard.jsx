@@ -132,7 +132,25 @@ const Dashboard = () => {
                     </a> */}
                 </div>
 
-                <div className="p-4 border-t border-slate-100 mt-auto">
+                <div className="px-4 mt-auto mb-4">
+                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-semibold text-slate-700">Daily Tokens</span>
+                            <span className="text-[10px] font-mono text-slate-500">{user?.dailyTokenUsage ? `${(user.dailyTokenUsage / 1000).toFixed(1)}k` : '0'} / 100k</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full ${user?.dailyTokenUsage >= 100000 ? 'bg-red-500' : 'bg-brand-500'} transition-all duration-500`}
+                                style={{ width: `${Math.min(((user?.dailyTokenUsage || 0) / 100000) * 100, 100)}%` }}
+                            />
+                        </div>
+                        {user?.dailyTokenUsage >= 100000 && (
+                            <p className="text-[10px] text-red-500 mt-2 font-medium">Limit reached. Read-only mode.</p>
+                        )}
+                    </div>
+                </div>
+
+                <div className="p-4 border-t border-slate-100">
                     <div className="flex items-center gap-3 px-3 py-2 mb-2 rounded-lg bg-slate-50">
                         <div className="h-8 w-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-sm uppercase">
                             {user?.username ? user.username.substring(0, 2) : 'ME'}

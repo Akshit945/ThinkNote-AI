@@ -19,6 +19,14 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    dailyTokenUsage: {
+        type: Number,
+        default: 0,
+    },
+    lastTokenReset: {
+        type: Date,
+        default: Date.now,
+    }
 }, { timestamps: true });
 
 // Hash password before saving

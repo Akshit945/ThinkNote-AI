@@ -16,6 +16,9 @@ const NotebookDetail = () => {
     const [mobileTab, setMobileTab] = useState('chat'); // 'sources' | 'chat' | 'rightPanel'
     const [rightDesktopTab, setRightDesktopTab] = useState('notes'); // 'notes' | 'quiz'
 
+    // Token limit state
+    const [tokenLimitReached, setTokenLimitReached] = useState(false);
+
     // Right Sidebar States
     const [notesText, setNotesText] = useState('');
     const [isSavingNotes, setIsSavingNotes] = useState(false);
@@ -171,7 +174,11 @@ const NotebookDetail = () => {
             }
         } catch (err) {
             console.error('Quiz generation error:', err);
-            setQuizError(err.response?.data?.error || err.response?.data?.message || 'Failed to generate quiz. Check your connection or API keys.');
+            if (err.response?.status === 403) {
+                setTokenLimitReached(true);
+            } else {
+                setQuizError(err.response?.data?.error || err.response?.data?.message || 'Failed to generate quiz. Check your connection or API keys.');
+            }
         } finally {
             setIsGeneratingQuiz(false);
         }
@@ -301,12 +308,19 @@ const NotebookDetail = () => {
                 content: data.answer,
                 sources: data.sources // Can be displayed later if needed
             }]);
+
         } catch (err) {
             console.error(err);
-            setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: 'Error: Failed to process query.'
-            }]);
+            if (err.response?.status === 403) {
+                // Remove the initial generic user message since it failed.
+                setMessages(prev => prev.slice(0, -1));
+                setTokenLimitReached(true);
+            } else {
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: 'Error: Failed to process query.'
+                }]);
+            }
         } finally {
             setIsThinking(false);
         }
@@ -974,6 +988,24 @@ const NotebookDetail = () => {
                                 Delete
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+            {/* Token Limit Modal */}
+            {tokenLimitReached && (
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden transform transition-all scale-100 border border-slate-100 animate-slide-up p-6 text-center">
+                        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                            <Bot className="h-6 w-6 text-red-600" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-900 mb-2">Daily Token Limit Reached</h3>
+                        <p className="text-sm text-slate-500 mb-6 font-medium leading-relaxed">You have hit the 100k daily token limit. Read-only mode has been activated until tomorrow.</p>
+                        <button
+                            onClick={() => setTokenLimitReached(false)}
+                            className="w-full inline-flex justify-center rounded-xl border border-transparent bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 focus:outline-none transition-all active:scale-95"
+                        >
+                            Okay, got it
+                        </button>
                     </div>
                 </div>
             )}

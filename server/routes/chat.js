@@ -1,6 +1,7 @@
 import express from 'express';
 import Notebook from '../models/Notebook.js';
 import Message from '../models/Message.js';
+import User from '../models/User.js';
 import { auth } from '../middleware/auth.js';
 import { runAdvancedRAGPipeline } from '../utils/ragPipeline.js';
 import { searchSimilarChunks } from '../utils/qdrant.js';
@@ -12,6 +13,34 @@ const router = express.Router();
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
+
+const MAX_DAILY_TOKENS = 100000;
+
+async function checkTokenLimit(userId, tokensToAdd = 0) {
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    const now = new Date();
+    const lastReset = user.lastTokenReset || new Date(0);
+
+    if (now.getDate() !== lastReset.getDate() || now.getMonth() !== lastReset.getMonth() || now.getFullYear() !== lastReset.getFullYear()) {
+        user.dailyTokenUsage = 0;
+        user.lastTokenReset = now;
+    }
+
+    if (user.dailyTokenUsage >= MAX_DAILY_TOKENS && tokensToAdd === 0) {
+        const err = new Error('Daily token limit reached. Read-only mode active.');
+        err.status = 403;
+        throw err;
+    }
+
+    if (tokensToAdd > 0) {
+        user.dailyTokenUsage += tokensToAdd;
+    }
+
+    await user.save();
+    return user;
+}
 
 router.get('/:notebookId', auth, async (req, res) => {
     try {
@@ -40,6 +69,9 @@ router.post('/:notebookId', auth, async (req, res) => {
         if (!notebook) {
             return res.status(404).json({ message: 'Notebook not found' });
         }
+
+        // Token Limit Check
+        await checkTokenLimit(req.user);
 
         // Save the user query to db
         const userMsg = new Message({
@@ -74,26 +106,24 @@ router.post('/:notebookId', auth, async (req, res) => {
         // console.log("contextStr", contextStr);
 
         const SYSTEM_PROMPT = `
-You are an AI assistant helping students inside a notebook.
+            You are an AI assistant helping students inside a notebook.
 
-Answer the user's question using ONLY the provided context.
+            Answer the user's question using ONLY the provided context.
 
-Rules:
-- If the context contains the answer, explain it clearly.
-- If multiple documents contain information, combine them.
-- If the context does NOT contain the answer, say:
-  "The provided sources do not contain enough information to answer this question."
--Dont write something like this [Documents 1, 4, and 7] in the answer .
+            Rules:
+            - If the context contains the answer, explain it clearly.
+            - If multiple documents contain information, combine them.
+            - If the context does NOT contain the answer, say:
+            "The provided sources do not contain enough information to answer this question."
+            -Dont write something like this [Documents 1, 4, and 7] in the answer .
 
-
-
-Context:
-${contextStr}
-`;
+            Context:
+            ${contextStr}
+        `;
 
         // Generate OpenAI completion with history context
         const response = await openai.chat.completions.create({
-            model: 'gpt-4o', // or 'gpt-4'/'gpt-3.5-turbo' based on availability
+            model: 'gpt-4o',
             messages: [
                 { role: 'system', content: SYSTEM_PROMPT },
                 ...chatContext,
@@ -103,6 +133,11 @@ ${contextStr}
         });
 
         const answer = response.choices[0].message.content;
+        const usage = response.usage;
+        console.log("usage", usage);
+        if (usage && usage.total_tokens) {
+            await checkTokenLimit(req.user, usage.total_tokens);
+        }
 
         const aiMsg = new Message({
             notebook: notebookId,
@@ -119,7 +154,8 @@ ${contextStr}
 
     } catch (err) {
         console.error('Chat error:', err);
-        res.status(500).json({ error: err.message });
+        const status = err.status || 500;
+        res.status(status).json({ error: err.message });
     }
 });
 
@@ -133,6 +169,9 @@ router.post('/:notebookId/quiz', auth, async (req, res) => {
         if (!notebook) {
             return res.status(404).json({ message: 'Notebook not found' });
         }
+
+        // Token Limit Check
+        await checkTokenLimit(req.user);
 
         // 1. Broad fetch for quiz context (up to 20 chunks should be plenty for 10 questions)
         const quizQueryStr = "Core factual concepts, summaries, definitions, key events, and important entities suitable for multiple choice questions.";
@@ -174,11 +213,18 @@ router.post('/:notebookId/quiz', auth, async (req, res) => {
         });
 
         const quizData = JSON.parse(response.choices[0].message.content);
+        const usage = response.usage;
+
+        if (usage && usage.total_tokens) {
+            await checkTokenLimit(req.user, usage.total_tokens);
+        }
+
         res.json(quizData);
 
     } catch (err) {
         console.error('Quiz generation error:', err);
-        res.status(500).json({ error: err.message });
+        const status = err.status || 500;
+        res.status(status).json({ error: err.message });
     }
 });
 
