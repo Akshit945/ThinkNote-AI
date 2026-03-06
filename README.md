@@ -92,7 +92,7 @@ Make sure you have the following installed:
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/your-username/thinknote-ai.git
+git clone [https://github.com/your-username/thinknote-ai.git](https://github.com/Akshit945/ThinkNote-AI.git)
 cd thinknote-ai
 ```
 
